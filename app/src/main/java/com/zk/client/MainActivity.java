@@ -8,10 +8,15 @@ import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.Surface;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.widget.TextView;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, SurfaceHolder.Callback {
+    private SurfaceView mSurfaceView;
+    private Surface mSurface;
     private TextView mTxt;
     private SocketClient mClient;
     private String mIp;
@@ -20,6 +25,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mSurfaceView = (SurfaceView) findViewById(R.id.surface_view);
+        mSurfaceView.getHolder().addCallback(this);
         findViewById(R.id.connect).setOnClickListener(this);
         findViewById(R.id.write).setOnClickListener(this);
         mTxt = (TextView) findViewById(R.id.txt);
@@ -33,6 +40,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (!TextUtils.isEmpty(mIp)) {
                     mTxt.setText(mTxt.getText().toString() + "\n" + "ip = " + mIp);
                     mClient = new SocketClient("192.168.43.1");
+                    mClient.setSurface(mSurface);
                     mClient.startClientThread();
                     mClient.mHandler = new Handler() {
                         @Override
@@ -80,5 +88,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (mClient != null) {
             mClient.stopClientThread();
         }
+    }
+
+    @Override
+    public void surfaceCreated(SurfaceHolder holder) {
+        mSurface = holder.getSurface();
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {
+        mSurface = null;
     }
 }
