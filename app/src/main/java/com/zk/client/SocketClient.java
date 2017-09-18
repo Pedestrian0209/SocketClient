@@ -1,5 +1,7 @@
 package com.zk.client;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
@@ -91,8 +93,24 @@ public class SocketClient {
     private void read() {
         while (mIsRunning) {
             try {
-                /*DataInputStream dataInputStream = new DataInputStream(mSocket.getInputStream());
-                sendMessage("data = " + dataInputStream.readInt());*/
+                if (true) {
+                    int b1 = mInputStream.read();
+                    int b2 = mInputStream.read();
+                    int b3 = mInputStream.read();
+                    int b4 = mInputStream.read();
+                    int length = (b1 << 24) | (b2 << 16) | (b3 << 8) | b4;
+                    byte[] bytes = new byte[length];
+                    int read = 0;
+                    while ((read < length)) {
+                        read += mInputStream.read(bytes, read, length - read);
+                    }
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, length);
+                    Message message = new Message();
+                    message.what = 10;
+                    message.obj = bitmap;
+                    mHandler.sendMessage(message);
+                    continue;
+                }
                 byte[] bt = new byte[100000];
                 mInputStream.read(bt);
                 int length = bytesToInt(bt, 0);

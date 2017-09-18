@@ -1,6 +1,7 @@
 package com.zk.client;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
@@ -12,11 +13,13 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, SurfaceHolder.Callback {
     private SurfaceView mSurfaceView;
     private Surface mSurface;
+    private ImageView mImg;
     private TextView mTxt;
     private SocketClient mClient;
     private String mIp;
@@ -27,6 +30,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
         mSurfaceView = (SurfaceView) findViewById(R.id.surface_view);
         mSurfaceView.getHolder().addCallback(this);
+        mImg = (ImageView) findViewById(R.id.img);
         findViewById(R.id.connect).setOnClickListener(this);
         findViewById(R.id.write).setOnClickListener(this);
         mTxt = (TextView) findViewById(R.id.txt);
@@ -46,7 +50,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         @Override
                         public void handleMessage(Message msg) {
                             super.handleMessage(msg);
-                            mTxt.setText(mTxt.getText().toString() + "\n" + msg.obj.toString());
+                            if (msg.what == 10) {
+                                mImg.setImageBitmap((Bitmap) msg.obj);
+                            } else {
+                                mTxt.setText(mTxt.getText().toString() + "\n" + msg.obj.toString());
+                            }
                         }
                     };
                 } else {
