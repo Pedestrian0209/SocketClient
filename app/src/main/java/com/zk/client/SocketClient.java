@@ -1,10 +1,12 @@
 package com.zk.client;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioTrack;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
+import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -13,6 +15,7 @@ import android.view.Surface;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -28,8 +31,8 @@ public class SocketClient {
     private static final int FRAME_RATE = 30; // 30 fps
     private static final int IFRAME_INTERVAL = 2; // 2 seconds between I-frames
     private static final int TIMEOUT_US = 10000;
-    private int mWidth = 720;
-    private int mHeight = 1280;
+    private int mWidth = 480;
+    private int mHeight = 854;
     private int mDpi = 1;
     private MediaCodec mDecoder;
     private Socket mSocket;
@@ -39,6 +42,7 @@ public class SocketClient {
     private InputStream mInputStream;
     private Surface mSurface;
     public static Handler mHandler;
+    private AudioTrack mAudioTrack;
 
     public SocketClient(String ip) {
         mIp = ip;
@@ -87,51 +91,59 @@ public class SocketClient {
         }
     }
 
+    private byte[] mAudioBuffer = new byte[8821];
+
     /**
      * 去读输入流
      */
     private void read() {
+        mAudioTrack.write(mAudioBuffer, 1, 8820);
+        //mAudioTrack.play();
         while (mIsRunning) {
             try {
-                if (true) {
-                    int b1 = mInputStream.read();
-                    int b2 = mInputStream.read();
-                    int b3 = mInputStream.read();
-                    int b4 = mInputStream.read();
-                    int length = (b1 << 24) | (b2 << 16) | (b3 << 8) | b4;
-                    byte[] bytes = new byte[length];
+                int b1 = mInputStream.read();
+                int b2 = mInputStream.read();
+                int b3 = mInputStream.read();
+                int b4 = mInputStream.read();
+                int size = (b1 << 24) | (b2 << 16) | (b3 << 8) | b4;
+                Log.d(TAG, "read size = " + size);
+                if (size > 0 && size < 100000) {
+                    byte[] bytes = new byte[size];
                     int read = 0;
-                    while ((read < length)) {
-                        read += mInputStream.read(bytes, read, length - read);
+                    while ((read < size)) {
+                        read += mInputStream.read(bytes, read, size - read);
                     }
-                    Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, length);
-                    Message message = new Message();
-                    message.what = 10;
-                    message.obj = bitmap;
-                    mHandler.sendMessage(message);
-                    continue;
-                }
-                byte[] bt = new byte[100000];
-                mInputStream.read(bt);
-                int length = bytesToInt(bt, 0);
-                if (length > 4 && length < 100000) {
-                    sendMessage("length = " + length);
-                    onFrame(bt, 4, length, 0);
+                    int type = bytes[0];
+                    Log.d(TAG, "read type = " + type);
+                    if (type == 0) {
+                        mAudioBuffer = bytes;
+                        //mAudioTrack.write(bytes, 1, size - 1);
+                        switch (mAudioTrack.getPlayState()) {
+                            case AudioTrack.PLAYSTATE_PAUSED:
+                                mAudioTrack.stop();
+                                mAudioTrack.reloadStaticData();
+                                mAudioTrack.play();
+                                break;
+                            case AudioTrack.PLAYSTATE_PLAYING:
+                                mAudioTrack.stop();
+                                mAudioTrack.reloadStaticData();
+                                mAudioTrack.play();
+                                break;
+                            case AudioTrack.PLAYSTATE_STOPPED:
+                                mAudioTrack.reloadStaticData();
+                                mAudioTrack.play();
+                                break;
+                        }
+                    } else if (type == 1) {
+                        onFrame(bytes, 1, size - 1, 0);
+                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
                 sendMessage("read error");
             }
         }
-    }
-
-    public static int bytesToInt(byte[] src, int offset) {
-        int value;
-        value = (int) ((src[offset] & 0xFF)
-                | ((src[offset + 1] & 0xFF) << 8)
-                | ((src[offset + 2] & 0xFF) << 16)
-                | ((src[offset + 3] & 0xFF) << 24));
-        return value;
+        mAudioTrack.stop();
     }
 
     private void sendMessage(String message) {
@@ -145,6 +157,7 @@ public class SocketClient {
             @Override
             public void run() {
                 if (mSocket != null && mPrintWriter != null) {
+                    Log.d(TAG, "sendMsg message = " + message);
                     mPrintWriter.write(message);
                     mPrintWriter.flush();
                 }
@@ -155,10 +168,19 @@ public class SocketClient {
     public void setSurface(Surface surface) {
         mSurface = surface;
         try {
+            prepareAudioTrack();
             prepareDecoder();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void prepareAudioTrack() {
+        int minBufSize = AudioTrack.getMinBufferSize(44100,
+                AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT);
+        mAudioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
+                44100, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
+                minBufSize, AudioTrack.MODE_STATIC);
     }
 
     private void prepareDecoder() throws IOException {
@@ -190,5 +212,6 @@ public class SocketClient {
             mDecoder.releaseOutputBuffer(outputBufferIndex, true);
             outputBufferIndex = mDecoder.dequeueOutputBuffer(bufferInfo, 0);
         }
+        Log.d(TAG, "onFrame end");
     }
 }

@@ -5,40 +5,37 @@
 
     <SurfaceView
         android:id="@+id/surface_view"
+        android:layout_width="240dp"
+        android:layout_height="427dp"
+        android:layout_gravity="right" />
+
+    <!--<ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent">-->
 
-    <ScrollView
+    <LinearLayout
+        android:id="@+id/container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
+        <Button
+            android:id="@+id/connect"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="connect" />
 
-            <Button
-                android:id="@+id/connect"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="connect" />
+        <Button
+            android:id="@+id/write"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="write" />
 
-            <Button
-                android:id="@+id/write"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="write" />
-
-            <ImageView
-                android:id="@+id/img"
-                android:layout_width="200dp"
-                android:layout_height="300dp" />
-
-            <TextView
-                android:id="@+id/txt"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="#ffffff" />
-        </LinearLayout>
-    </ScrollView>
+        <TextView
+            android:id="@+id/txt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#ffffff" />
+    </LinearLayout>
+    <!--</ScrollView>-->
 </FrameLayout>
