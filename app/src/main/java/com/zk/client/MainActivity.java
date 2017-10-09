@@ -1,6 +1,9 @@
 package com.zk.client;
 
 import android.content.Context;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioTrack;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
@@ -21,8 +24,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Surface mSurface;
     private TextView mTxt;
     private SocketClient mClient;
-    private AudioSocketClient mAudioSocketClient;
     private String mIp;
+    private AudioTrack mAudioTrack;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +37,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.write).setOnClickListener(this);
         mTxt = (TextView) findViewById(R.id.txt);
         findViewById(R.id.container).setOnTouchListener(this);
+        //prepareAudioTrack();
+    }
+
+    private void prepareAudioTrack() {
+        int minBufSize = AudioTrack.getMinBufferSize(44100,
+                AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT);
+        mAudioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
+                44100, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
+                minBufSize, AudioTrack.MODE_STREAM);
     }
 
     @Override
@@ -45,16 +57,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     mTxt.setText(mTxt.getText().toString() + "\n" + "ip = " + mIp);
                     mClient = new SocketClient("192.168.43.1");
                     mClient.setSurface(mSurface);
-                    mClient.startClientThread();
                     mClient.mHandler = new Handler() {
                         @Override
                         public void handleMessage(Message msg) {
                             super.handleMessage(msg);
+                            switch (msg.what) {
+                                case 10:
+                                    Log.d("zhang","write start");
+                                    //mAudioTrack.write((byte[]) msg.obj, 1, msg.arg1 - 1);
+                                    Log.d("zhang","write end");
+                                    break;
+                            }
                             mTxt.setText(mTxt.getText().toString() + "\n" + msg.obj.toString());
                         }
                     };
-                    /*mAudioSocketClient = new AudioSocketClient(mIp);
-                    mAudioSocketClient.startClientThread();*/
+                    mClient.startClientThread();
+                    //mAudioTrack.play();
                 } else {
                     mTxt.setText(mTxt.getText().toString() + "\n" + "ip is null");
                 }
@@ -94,6 +112,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (mClient != null) {
             mClient.stopClientThread();
         }
+        //mAudioTrack.stop();
+        //mAudioTrack.release();
     }
 
     @Override
